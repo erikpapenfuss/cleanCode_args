@@ -189,7 +189,7 @@ public class Args {
         return booleanArgs.containsKey(argChar);
     }
 
-    public int cardinaliity() {
+    public int cardinality() {
         return argsFound.size();
     }
 
