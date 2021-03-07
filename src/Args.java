@@ -1,3 +1,5 @@
+import com.sun.jdi.connect.Connector;
+
 import java.text.ParseException;
 import java.util.*;
 
@@ -7,8 +9,8 @@ public class Args {
     private boolean valid = true;
     private Set<Character> unexpectedArguments = new TreeSet<Character>();
     private Map<Character, ArgumentMarshaller> booleanArgs = new HashMap<Character, ArgumentMarshaller>();
-    private Map<Character, String> stringArgs = new HashMap<Character, String>();
-    private Map<Character, Integer> intArgs = new HashMap<Character, Integer>();
+    private Map<Character, ArgumentMarshaller> stringArgs = new HashMap<Character, ArgumentMarshaller>();
+    private Map<Character, ArgumentMarshaller> intArgs = new HashMap<Character, ArgumentMarshaller>();
     private Set<Character> argsFound = new HashSet<Character>();
     private int currentArgument;
     private  char errorArgumentId = '\0';
@@ -76,11 +78,11 @@ public class Args {
     }
 
     private void parseIntegerSchemaElement(char elementId) {
-        intArgs.put(elementId, 0);
+        intArgs.put(elementId, new IntegerArgumentMarshaller());
     }
 
     private void parseStringSchemaElement(char elementId) {
-        stringArgs.put(elementId, "");
+        stringArgs.put(elementId, new StringArgumentMarshaller());
     }
 
     private boolean isStringSchemaElement(String elementTail) {
@@ -146,7 +148,7 @@ public class Args {
         String parameter = null;
         try {
             parameter = args[currentArgument];
-            intArgs.put(argChar, Integer.parseInt(parameter));
+            intArgs.get(argChar).setInteger(Integer.parseInt(parameter));
         }
         catch (ArrayIndexOutOfBoundsException e) {
             valid = false;
@@ -167,7 +169,7 @@ public class Args {
     private void setStringArg(char argChar) throws ArgsException {
         currentArgument++;
         try {
-            stringArgs.put(argChar, args[currentArgument]);
+            stringArgs.get(argChar).setString(args[currentArgument]);
         }
         catch(ArrayIndexOutOfBoundsException e) {
             valid = false;
@@ -182,7 +184,7 @@ public class Args {
     }
 
     private void setBooleanArg(char argChar, boolean value) {
-        booleanArgs.get(argChar).setBoolean(value);
+        booleanArgs.get(argChar).set("true");
     }
 
     private boolean isBooleanArg(char argChar) {
@@ -242,11 +244,18 @@ public class Args {
     }
 
     public int getInt(char arg) {
-        return zeroIfNull(intArgs.get(arg));
+        Args.ArgumentMarshaller am = intArgs.get(arg);
+        return am == null ? 0 : am.getInteger();
     }
 
     public boolean getBoolean(char arg) {
-        return falseIfNull(booleanArgs.get(arg).getBoolean());
+        Args.ArgumentMarshaller am = booleanArgs.get(arg);
+        return am.getBoolean();
+    }
+
+    public String getString(char arg) {
+        Args.ArgumentMarshaller am = stringArgs.get(arg);
+        return am == null ? "" : am.getString();
     }
 
     public boolean has(char arg) {
@@ -261,19 +270,43 @@ public class Args {
     private class ArgsException extends Exception {
     }
 
-    private class ArgumentMarshaller {
-        private boolean booleanValue = false;
-
-        public void setBoolean(boolean value) {
-            booleanValue = value;
-        }
+    private abstract class ArgumentMarshaller {
+        protected boolean booleanValue = false;
+        private String stringValue = "";
+        private int integerValue;
 
         public boolean getBoolean() {
+
             return booleanValue;
         }
+
+        public void setString(String value) {
+
+            stringValue = value;
+        }
+
+        public String getString() {
+
+            return stringValue == null ? "" : stringValue;
+        }
+
+        public void setInteger(int i) {
+
+            integerValue = i;
+        }
+
+        public int getInteger() {
+
+            return integerValue;
+        }
+
+        public abstract void set(String s);
     }
 
     private class BooleanArgumentMarshaller extends ArgumentMarshaller {
+        public void set(String s) {
+            booleanValue = true;
+        }
     }
 
     private class StringArgumentMarshaller extends ArgumentMarshaller {
