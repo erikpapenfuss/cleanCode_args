@@ -11,6 +11,7 @@ public class Args {
     private Map<Character, ArgumentMarshaller> booleanArgs = new HashMap<Character, ArgumentMarshaller>();
     private Map<Character, ArgumentMarshaller> stringArgs = new HashMap<Character, ArgumentMarshaller>();
     private Map<Character, ArgumentMarshaller> intArgs = new HashMap<Character, ArgumentMarshaller>();
+    private Map<Character, ArgumentMarshaller> marshallers = new HashMap<Character, ArgumentMarshaller>();
     private Set<Character> argsFound = new HashSet<Character>();
     private int currentArgument;
     private  char errorArgumentId = '\0';
@@ -74,15 +75,21 @@ public class Args {
         }
     }
     private void parseBooleanSchemaElement(char elementId) {
-        booleanArgs.put(elementId, new BooleanArgumentMarshaller());
+        ArgumentMarshaller m = new BooleanArgumentMarshaller();
+        booleanArgs.put(elementId, m);
+        marshallers.put(elementId, m);
     }
 
     private void parseIntegerSchemaElement(char elementId) {
-        intArgs.put(elementId, new IntegerArgumentMarshaller());
+        ArgumentMarshaller m = new IntegerArgumentMarshaller();
+        intArgs.put(elementId, m);
+        marshallers.put(elementId, m);
     }
 
     private void parseStringSchemaElement(char elementId) {
-        stringArgs.put(elementId, new StringArgumentMarshaller());
+        ArgumentMarshaller m = new StringArgumentMarshaller();
+        stringArgs.put(elementId, m);
+        marshallers.put(elementId, m);
     }
 
     private boolean isStringSchemaElement(String elementTail) {
@@ -127,71 +134,63 @@ public class Args {
     }
 
     private boolean setArgument(char argChar) throws ArgsException {
-        if (isBooleanArg(argChar))
-            setBooleanArg(argChar, true);
-        else if (isStringArg(argChar))
-            setStringArg(argChar);
-        else if (isIntArg(argChar))
-            setIntArg(argChar);
-        else
-            return false;
+        ArgumentMarshaller m = marshallers.get(argChar);
+        try {
+            if (m instanceof BooleanArgumentMarshaller)
+                setBooleanArg(m);
+            else if (m instanceof StringArgumentMarshaller)
+                setStringArg(argChar);
+            else if (m instanceof IntegerArgumentMarshaller)
+                setIntArg(argChar);
+            else
+                return false;
+        } catch (ArgsException e) {
+            valid = false;
+            errorArgumentId = argChar;
+            throw e;
+        }
 
         return true;
     }
 
-    private boolean isIntArg(char argChar) {
-        return intArgs.containsKey(argChar);
-    }
-
-    private void setIntArg(char argChar) throws ArgsException {
+    private void setIntArg(ArgumentMarshaller m) throws ArgsException {
         currentArgument++;
         String parameter = null;
         try {
             parameter = args[currentArgument];
-            intArgs.get(argChar).setInteger(Integer.parseInt(parameter));
+            m.set(parameter);
         }
         catch (ArrayIndexOutOfBoundsException e) {
-            valid = false;
-            errorArgumentId = argChar;
             errorCode = ErrorCode.MISSING_INTEGER;
             throw new ArgsException();
         }
         catch (NumberFormatException e) {
-            valid = false;
-            errorArgumentId = argChar;
             errorParameter = parameter;
             errorCode = ErrorCode.INVALID_INTEGER;
-            throw new ArgsException();
-
+            throw e;
         }
     }
 
-    private void setStringArg(char argChar) throws ArgsException {
+    private void setStringArg(ArgumentMarshaller m) throws ArgsException {
         currentArgument++;
         try {
-            stringArgs.get(argChar).setString(args[currentArgument]);
+            m.set(args[currentArgument]);
         }
         catch(ArrayIndexOutOfBoundsException e) {
-            valid = false;
-            errorArgumentId = argChar;
             errorCode = ErrorCode.MISSING_STRING;
             throw new ArgsException();
         }
     }
 
-    private boolean isStringArg(char argChar) {
-        return stringArgs.containsKey((argChar));
+    private void setBooleanArg(ArgumentMarshaller m) {
+        try {
+            m.set("true");
+        } catch (ArgsException e){
+
+        }
     }
 
-    private void setBooleanArg(char argChar, boolean value) {
-        booleanArgs.get(argChar).set("true");
-    }
-
-    private boolean isBooleanArg(char argChar) {
-        return booleanArgs.containsKey(argChar);
-    }
-
-    public int cardinality() {
+    public int cardinaliity() {
         return argsFound.size();
     }
 
@@ -250,7 +249,7 @@ public class Args {
 
     public boolean getBoolean(char arg) {
         Args.ArgumentMarshaller am = booleanArgs.get(arg);
-        return am.getBoolean();
+        return am != null && (Boolean) am.get();
     }
 
     public String getString(char arg) {
@@ -300,7 +299,7 @@ public class Args {
             return integerValue;
         }
 
-        public abstract void set(String s);
+        public abstract void set(String s) throws ArgsException;
     }
 
     private class BooleanArgumentMarshaller extends ArgumentMarshaller {
