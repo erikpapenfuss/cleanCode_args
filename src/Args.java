@@ -129,7 +129,6 @@ public class Args {
             throw e;
         }
 
-
         return true;
     }
 
@@ -184,7 +183,7 @@ public class Args {
     public String errorMessage() throws Exception {
         switch (errorCode) {
             case OK:
-                throw  new Exception("TILT: Should not get here.");
+                throw new Exception("TILT: Should not get here.");
             case UNEXPECTED_ARGUMENT:
                 return unexpectedArgumentMessage();
             case MISSING_STRING:
@@ -207,16 +206,16 @@ public class Args {
         return message.toString();
     }
 
-    private boolean falseIfNull(Boolean b) {
-        return b != null && b;
-    }
-
-    private int zeroIfNull(Integer i) {
-        return i == null ? 0 : i;
-    }
-
-    private String blankIfNull(String s) {
-        return s == null ? "" : s;
+    public boolean getBoolean(char arg) {
+        Args.ArgumentMarshaller am = marshallers.get(arg);
+        boolean b = false;
+        try {
+            b = am != null &&  (Boolean) am.get();
+        }
+        catch (ClassCastException e) {
+            b = false;
+        }
+        return b;
     }
 
     public String getString(char arg) {
@@ -239,18 +238,6 @@ public class Args {
         }
     }
 
-    public boolean getBoolean(char arg) {
-        Args.ArgumentMarshaller am = marshallers.get(arg);
-        boolean b = false;
-        try {
-            b = am != null &&  (Boolean) am.get();
-        }
-        catch (ClassCastException e) {
-            b = false;
-        }
-        return b;
-    }
-
     public boolean has(char arg) {
         return argsFound.contains(arg);
     }
@@ -265,8 +252,7 @@ public class Args {
 
     private abstract class ArgumentMarshaller {
 
-        public abstract void set(String s);
-
+        public abstract void set(String s) throws ArgsException;
         public abstract Object get();
     }
 
@@ -300,7 +286,8 @@ public class Args {
         public void set(String s) throws ArgsException {
             try {
                 intValue = Integer.parseInt(s);
-            } catch (NumberFormatException e) {
+            }
+            catch (NumberFormatException e) {
                 throw new ArgsException();
             }
         }
