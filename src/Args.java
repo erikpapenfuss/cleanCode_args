@@ -102,7 +102,7 @@ public class Args {
     }
 
     public boolean getBoolean(char arg) {
-        Args.ArgumentMarshaller am = marshallers.get(arg);
+        ArgumentMarshaller am = marshallers.get(arg);
         boolean b = false;
         try {
             b = am != null &&  (Boolean) am.get();
@@ -114,7 +114,7 @@ public class Args {
     }
 
     public String getString(char arg) {
-        Args.ArgumentMarshaller am = marshallers.get(arg);
+        ArgumentMarshaller am = marshallers.get(arg);
         try {
             return am == null ? "" : (String)am.get();
         }
@@ -124,7 +124,7 @@ public class Args {
     }
 
     public int getInt(char arg) {
-        Args.ArgumentMarshaller am = marshallers.get(arg);
+        ArgumentMarshaller am = marshallers.get(arg);
         try {
             return am == null ? 0 : (Integer) am.get();
         }
@@ -134,7 +134,7 @@ public class Args {
     }
 
     public double getDouble(char arg) {
-        Args.ArgumentMarshaller am = marshallers.get(arg);
+        ArgumentMarshaller am = marshallers.get(arg);
         try {
             return am == null ? 0 : (Double) am.get();
         }
@@ -145,92 +145,6 @@ public class Args {
 
     public boolean has(char arg) {
         return argsFound.contains(arg);
-    }
-
-    private interface ArgumentMarshaller {
-        void set(Iterator<String> currentArgument) throws ArgsException;
-        Object get();
-    }
-
-    private class BooleanArgumentMarshaller implements ArgumentMarshaller {
-        private boolean booleanValue = false;
-
-        public void set(Iterator<String> currentArgument) throws ArgsException {
-            booleanValue = true;
-        }
-
-        public void set(String s) {
-
-        }
-
-        public Object get() {
-            return booleanValue;
-        }
-    }
-
-    private class StringArgumentMarshaller implements ArgumentMarshaller {
-        private String stringValue = "";
-
-        public void set(Iterator<String> currentArgument) throws ArgsException {
-            try {
-                stringValue = currentArgument.next();
-            }
-            catch (NoSuchElementException e) {
-                throw new ArgsException(ArgsException.ErrorCode.MISSING_STRING);
-            }
-        }
-
-        public void set(String s) {
-            stringValue = s;
-        }
-
-        public Object get() {
-            return stringValue;
-        }
-    }
-
-    private class IntegerArgumentMarshaller implements ArgumentMarshaller {
-        private int intValue = 0;
-
-        public void set(Iterator<String> currentArgument) throws ArgsException {
-            String parameter = null;
-            try {
-                parameter = currentArgument.next();
-                intValue = Integer.parseInt(parameter);
-            }
-            catch(NoSuchElementException e) {
-                throw new ArgsException(ArgsException.ErrorCode.MISSING_INTEGER);
-            }
-            catch (NumberFormatException e) {
-                throw new ArgsException(ArgsException.ErrorCode.INVALID_INTEGER);
-            }
-        }
-
-        public Object get() {
-            return intValue;
-        }
-    }
-
-    private class DoubleArgumentMarshaller implements ArgumentMarshaller {
-        private double doubleValue = 0;
-
-        public void set(Iterator<String> currentArgument) throws ArgsException {
-            String parameter = null;
-            try {
-                parameter = currentArgument.next();
-                doubleValue = Double.parseDouble(parameter);
-            }
-            catch (NoSuchElementException e) {
-                throw new ArgsException(ArgsException.ErrorCode.MISSING_DOUBLE);
-            }
-            catch (NumberFormatException e) {
-                throw new ArgsException(ArgsException.ErrorCode.INVALID_DOUBLE);
-            }
-        }
-
-        public Object get() {
-            return doubleValue;
-        }
     }
 }
 
