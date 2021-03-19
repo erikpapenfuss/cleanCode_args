@@ -206,14 +206,12 @@ public class Args {
     private class ArgsException extends Exception {
     }
 
-    private abstract class ArgumentMarshaller {
-        public abstract void set(Iterator<String> currentArgument)
-            throws ArgsException;
-        public abstract void set(String s) throws ArgsException;
-        public abstract Object get();
+    private interface ArgumentMarshaller {
+        void set(Iterator<String> currentArgument) throws ArgsException;
+        Object get();
     }
 
-    private class BooleanArgumentMarshaller extends ArgumentMarshaller {
+    private class BooleanArgumentMarshaller implements ArgumentMarshaller {
         private boolean booleanValue = false;
 
         public void set(Iterator<String> currentArgument)
@@ -230,7 +228,7 @@ public class Args {
         }
     }
 
-    private class StringArgumentMarshaller extends ArgumentMarshaller {
+    private class StringArgumentMarshaller implements ArgumentMarshaller {
         private String stringValue = "";
 
         public void set(Iterator<String> currentArgument)
@@ -253,7 +251,7 @@ public class Args {
         }
     }
 
-    private class IntegerArgumentMarshaller extends ArgumentMarshaller {
+    private class IntegerArgumentMarshaller implements ArgumentMarshaller {
         private int intValue = 0;
 
         public void set(Iterator<String> currentArgument)
@@ -261,25 +259,16 @@ public class Args {
             String parameter = null;
             try {
                 parameter = currentArgument.next();
-                set(parameter);
+                intValue = Integer.parseInt(parameter);
             }
             catch(NoSuchElementException e) {
                 errorCode = ErrorCode.MISSING_INTEGER;
                 throw new ArgsException();
             }
-            catch (ArgsException e) {
+            catch (NumberFormatException e) {
                 errorParameter = parameter;
                 errorCode = ErrorCode.INVALID_INTEGER;
                 throw e;
-            }
-        }
-
-        public void set(String s) throws ArgsException {
-            try {
-                intValue = Integer.parseInt(s);
-            }
-            catch (NumberFormatException e) {
-                throw new ArgsException();
             }
         }
 
